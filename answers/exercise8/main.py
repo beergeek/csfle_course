@@ -72,7 +72,7 @@ def rand_salary(points):
 def get_history(dates, salaries):
   history = []
   for i in range(1, len(dates)):
-    history.append({"salary": salaries[i], "starteDate": dates[i]})
+    history.append({"salary": salaries[i], "startDate": dates[i]})
   return history
 
 def get_roles():
