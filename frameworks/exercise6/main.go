@@ -81,46 +81,26 @@ func createClientEncryptionInstance(c *mongo.Client, kp map[string]map[string]in
 	return client, nil
 }
 
-func createDEK(c *mongo.Client, kn string, kp map[string]map[string]interface{}, kns string, cmk map[string]interface{}, altName string) (primitive.Binary, error) {
+// Create a DEK
+// Complete this
+func createDEK(<VARIABLES>) (primitive.Binary, error) {
 	var (
 		ce  *mongo.ClientEncryption
 		dek primitive.Binary
 		err error
 	)
-
-	ce, err = createClientEncryptionInstance(c, kp, kns)
-	if err != nil {
-		return primitive.Binary{}, err
-	}
-
-	ceOpts := options.DataKey().
-		SetMasterKey(cmk).
-		SetKeyAltNames([]string{altName})
-	dek, err = ce.CreateDataKey(context.TODO(), kn, ceOpts)
-	if err != nil {
-		return primitive.Binary{}, err
-	}
+	
 
 	return dek, nil
 }
 
-func getEmployeeDEK(c *mongo.Client, kn string, kp map[string]map[string]interface{}, kns string, cmk map[string]interface{}, altName string, kdb string, kcoll string) (primitive.Binary, error) {
+// Determine if DEK exists, call creaeDEK if is does not
+// Complete this
+func getEmployeeDEK(<VARIABLES>) (primitive.Binary, error) {
 	var (
 		err error
 		dek primitive.Binary
 	)
-
-	dek, err = getDEK(c.Database(kdb).Collection(kcoll), altName)
-	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			return primitive.Binary{}, err
-		}
-		// If not DEK then create one
-		dek, err = createDEK(c, kn, kp, kns, cmk, altName)
-		if err != nil {
-			return primitive.Binary{}, err
-		}
-	}
 
 	return dek, nil
 }
@@ -198,7 +178,9 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	id := int32(rand.Intn(100000))
 
-	_, err = getEmployeeDEK(client, kmsName, kmsProvider, keySpace, cmk, strconv.FormatInt(int64(id), 10), keyDB, keyCollection)
+	// Test if the employee DEK exists, create it if it does not
+	// Complete this
+	employeeDEK, err = getEmployeeDEK(<VARIABLES>)
 	if err != nil {
 		fmt.Printf("Cannot get employee DEK: %s\n", err)
 		exitCode = 1
@@ -215,71 +197,9 @@ func main() {
 		return
 	}
 
-	schemaMap = bson.M{
-		db + "." + collection: bson.M{
-			"bsonType": "object",
-			"encryptMetadata": bson.M{
-				"keyId":     "/dekAltName",
-				"algorithm": "AEAD_AES_256_CBC_HMAC_SHA_512-Random",
-			},
-			"properties": bson.M{
-				"name": bson.M{
-					"bsonType": "object",
-					"properties": bson.M{
-						"firstname": bson.M{
-							"encrypt": bson.M{
-								"bsonType":  "string",
-								"keyId":     bson.A{dek},
-								"algorithm": "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic",
-							},
-						},
-						"lastname": bson.M{
-							"encrypt": bson.M{
-								"bsonType":  "string",
-								"keyId":     bson.A{dek},
-								"algorithm": "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic",
-							},
-						},
-						"othernames": bson.M{
-							"encrypt": bson.M{
-								"bsonType": "string",
-							},
-						},
-					},
-				},
-				"address": bson.M{
-					"bsonType": "object",
-					"properties": bson.M{
-						"streetAddress": bson.M{
-							"encrypt": bson.M{
-								"bsonType": "string",
-							},
-						},
-						"suburbCounty": bson.M{
-							"encrypt": bson.M{
-								"bsonType": "string",
-							},
-						},
-					},
-				},
-				"phoneNumber": bson.M{
-					"encrypt": bson.M{
-						"bsonType": "string",
-					},
-				},
-				"salary": bson.M{
-					"encrypt": bson.M{
-						"bsonType": "object",
-					},
-				},
-				"taxIdentifier": bson.M{
-					"encrypt": bson.M{
-						"bsonType": "string",
-					},
-				},
-			},
-		},
-	}
+	// Our schema map
+	// Complete this
+	schemaMap = bson.M{}
 
 	payload := bson.M{
 		"_id": id,
@@ -311,12 +231,8 @@ func main() {
 	}
 
 	// name.othernames can be `nil`, so let's test and remove if that condistion is true
-	name := payload["name"].(bson.M)
-	if name["othernames"] == nil {
-		fmt.Println("Removing nil")
-		delete(name, "othernames")
-		payload["name"] = name
-	}
+	// Complete this
+	payload = <FUNCTION>
 
 	encryptedClient, err = createEncryptedClient(connectionString, keySpace, kmsProvider, schemaMap)
 	if err != nil {

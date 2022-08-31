@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 
@@ -32,7 +33,7 @@ func getAWSToken() (*sts.AssumeRoleOutput, error) {
 
 	roleToAssumeArn := "arn:aws:iam::331472312345:role/ce-training-kms"
 	sessionName := "test_session"
-	var durationSeconds int32 = 3200
+	var durationSeconds int32 = 3600
 	result, err := svc.AssumeRole(context.TODO(), &sts.AssumeRoleInput{
 		RoleArn:         &roleToAssumeArn,
 		RoleSessionName: &sessionName,
@@ -104,25 +105,35 @@ func createDEK(c *mongo.Client, kn string, kp map[string]map[string]interface{},
 	return dek, nil
 }
 
-func getEmployeeDEK(c *mongo.Client, kn string, kp map[string]map[string]interface{}, kns string, cmk map[string]interface{}, altName string, kdb string, kcoll string) (primitive.Binary, error) {
+// Create a DEK
+// Complete this
+func createDEK(<VARIABLES>) (primitive.Binary, error) {
+	var (
+		ce  *mongo.ClientEncryption
+		dek primitive.Binary
+		err error
+	)
+	
+
+	return dek, nil
+}
+
+// Determine if DEK exists, call creaeDEK if is does not
+// Complete this
+func getEmployeeDEK(<VARIABLES>) (primitive.Binary, error) {
 	var (
 		err error
 		dek primitive.Binary
 	)
 
-	dek, err = getDEK(c.Database(kdb).Collection(kcoll), altName)
-	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			return primitive.Binary{}, err
-		}
-		// If not DEK then create one
-		dek, err = createDEK(c, kn, kp, kns, cmk, altName)
-		if err != nil {
-			return primitive.Binary{}, err
-		}
-	}
-
 	return dek, nil
+}
+
+// Function to destroy employee DEK
+// Complete this
+func trashDEK(<VARIABLES>) error {
+
+	return nil
 }
 
 func getDEK(c *mongo.Collection, altName string) (primitive.Binary, error) {
@@ -151,6 +162,7 @@ func main() {
 		connectionString = "mongodb+srv://mongoCryptoClient:<PASSWORD>@<CLUSTER_NAME>.bildu.mongodb.net"
 		db               = "companyData"
 		dek              primitive.Binary
+		employeeDEK      primitive.Binary
 		encryptedClient  *mongo.Client
 		exitCode         = 0
 		findResult       bson.M
@@ -198,7 +210,9 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 	id := int32(rand.Intn(100000))
 
-	_, err = getEmployeeDEK(client, kmsName, kmsProvider, keySpace, cmk, strconv.FormatInt(int64(id), 10), keyDB, keyCollection)
+	// Test if the employee DEK exists, create it if it does not
+	// Complete this
+	employeeDEK, err = getEmployeeDEK(<VARIABLES>)
 	if err != nil {
 		fmt.Printf("Cannot get employee DEK: %s\n", err)
 		exitCode = 1
@@ -330,6 +344,7 @@ func main() {
 	result, err = coll.InsertOne(context.TODO(), payload)
 	if mongo.IsDuplicateKeyError(err) {
 		fmt.Println("Duplicate key, continuing")
+		// this is just to handle the duplicate key for this exercise and should not be done in real world scenarios
 		key = payload["_id"].(int32)
 	} else if err != nil {
 		fmt.Printf("Insert error: %s\n", err)
@@ -339,9 +354,42 @@ func main() {
 		key = result.InsertedID.(int32)
 	}
 
-	// retrieve our document
+	// retrieve our document in unencrypted format
+	err = client.Database(db).Collection(collection).FindOne(context.TODO(), bson.M{"_id": key}).Decode(&findResult)
+	if err != nil {
+		fmt.Printf("find error: %s\n", err)
+		exitCode = 1
+		return
+	}
+	fmt.Println(findResult)
+
+	// retrieve our document in encrypted format
 	err = coll.FindOne(context.TODO(), bson.M{"_id": key}).Decode(&findResult)
 	if err != nil {
+		fmt.Printf("find error: %s\n", err)
+		exitCode = 1
+		return
+	}
+	fmt.Println(findResult)
+
+	// Destroy our Employee DEK
+	// Complete this
+	err = trashDEK(<VARIABLES>)
+	if err != nil {
+		fmt.Printf("DEK deletion error: %s", err)
+	}
+
+	// Put in a sleep for 61 seconds below
+	<SLEEP_FUNCTION>
+
+	// retrieve our document in encrypted format
+	err = coll.FindOne(context.TODO(), bson.M{"_id": key}).Decode(&findResult)
+	if err != nil {
+		// Handle our missing DEK
+		// Complete this
+		
+
+
 		fmt.Printf("find error: %s\n", err)
 		exitCode = 1
 		return

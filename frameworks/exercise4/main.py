@@ -111,7 +111,7 @@ def main():
     ]
   }
 
-  # remove `name.othernames` if None because wwe cannot encrytp none
+  # remove `name.othernames` if None because wwe cannot encrypt none
   # complete this
   payload = <FUNCTION>
 

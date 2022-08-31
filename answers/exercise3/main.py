@@ -180,7 +180,7 @@ def main():
     ]
   }
 
-  # remove `name.othernames` if None because wwe cannot encrytp none
+  # remove `name.othernames` if None because wwe cannot encrypt none
   if payload["name"]["othernames"] == None:
     del(payload["name"]["othernames"])
 

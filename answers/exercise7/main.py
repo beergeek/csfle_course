@@ -278,7 +278,7 @@ def main():
     sys.exit(1)
   encrypted_db = secure_client[encrypted_db_name]
 
-  # remove `name.othernames` if None because wwe cannot encrytp none
+  # remove `name.othernames` if None because wwe cannot encrypt none
   if employee["name"]["othernames"] == None:
     del(employee["name"]["othernames"])
   

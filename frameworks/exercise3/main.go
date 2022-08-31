@@ -81,70 +81,26 @@ func createEncryptedClient(cs string, kp map[string]map[string]interface{}, s bs
 	return client, nil
 }
 
-func encryptManual(ce *mongo.ClientEncryption, d primitive.Binary, a string, b interface{}) (primitive.Binary, error) {
+// Manually encrypt a single variable
+// Complete this
+func encryptManual(<VARIABLES>) {
 	var out primitive.Binary
-	rawValueType, rawValueData, err := bson.MarshalValue(b)
-	if err != nil {
-		return primitive.Binary{}, err
-	}
 
-	rawValue := bson.RawValue{Type: rawValueType, Value: rawValueData}
-
-	encryptionOpts := options.Encrypt().
-		SetAlgorithm(a).
-		SetKeyID(d)
-
-	out, err = ce.Encrypt(context.TODO(), rawValue, encryptionOpts)
-	if err != nil {
-		return primitive.Binary{}, err
-	}
+	// Create code here
 
 	return out, nil
 }
 
-func encryptViaSchema(c *mongo.ClientEncryption, s []string, dek primitive.Binary, p bson.M, a string) (bson.M, error) {
+// Encrypt all the data that requires encrypting within the payload
+// Complete this
+func encryptData(<VARIABLES>) (bson.M, error) {
 	var err error
-	if len(s) > 1 {
-		p[s[0]], err = encryptViaSchema(c, s[1:], dek, p[s[0]].(bson.M), a)
-		if err != nil {
-			return bson.M{}, err
-		}
-		return p, nil
-	}
-
-	// if field absent return payload
-	if p[s[0]] == nil {
-		return p, nil
-	}
-
-	// Encrypt field value
-	p[s[0]], err = encryptManual(c, dek, a, p[s[0]])
-	if err != nil {
-		return bson.M{}, err
-	}
 	return p, nil
 }
 
-func encryptData(c *mongo.ClientEncryption, s SchemaObject, dek primitive.Binary, p bson.M) (bson.M, error) {
-	var err error
-
-	for _, e := range s.deterministic {
-		p, err = encryptViaSchema(c, e, dek, p, "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic")
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, e := range s.random {
-		p, err = encryptViaSchema(c, e, dek, p, "AEAD_AES_256_CBC_HMAC_SHA_512-Random")
-		if err != nil {
-			return nil, err
-		}
-	}
-	return p, nil
-}
-
-func decryptManual(c *mongo.ClientEncryption, d primitive.Binary) (bson.RawValue, error) {
+// Decrypt a single variable
+// Complete this
+func decryptManual(<VARIABLES>) (bson.RawValue, error) {
 	out, err := c.Decrypt(context.TODO(), d)
 	if err != nil {
 		return bson.RawValue{}, err
@@ -153,32 +109,9 @@ func decryptManual(c *mongo.ClientEncryption, d primitive.Binary) (bson.RawValue
 	return out, nil
 }
 
-func decryptData(c *mongo.ClientEncryption, d bson.M) (bson.M, error) {
-	// Decrypt the data
-	for k, v := range d {
-		a, ok := v.(primitive.M)
-		if ok {
-			data, err := decryptData(c, a)
-			if err != nil {
-				return bson.M{}, err
-			}
-			d[k] = data
-		} else {
-			// Check if binary Subtype 6 data, e.g. encrypted. Skip if it is not
-			i, ok := v.(primitive.Binary)
-			if !ok {
-				// not binary data
-				continue
-			}
-			if i.Subtype == 6 {
-				data, err := decryptManual(c, i)
-				if err != nil {
-					return bson.M{}, err
-				}
-				d[k] = data
-			}
-		}
-	}
+// Decrypt all the data as required
+// Complete this
+func decryptData(<VARIABLES>) (bson.M, error) {
 	return d, nil
 }
 
@@ -253,7 +186,6 @@ func main() {
 		fmt.Printf("DEK find error: %s\n", err)
 		exitCode = 1
 		return
-	}
 
 	clientEncryption, err = createManualEncryptionClient(client, kmsProvider, keySpace)
 	if err != nil {
@@ -262,59 +194,17 @@ func main() {
 		return
 	}
 
-	schema := SchemaObject{
-		deterministic: [][]string{
-			{"name", "firstname"},
-			{"name", "lastname"},
-		},
-		random: [][]string{
-			{"name", "othernames"},
-			{"address", "streetAddress"},
-			{"address", "suburbCounty"},
-			{"dob"},
-			{"phoneNumber"},
-			{"salary"},
-			{"taxIdentifier"},
-		},
-	}
-
-	payload := bson.M{
-		"_id": int32(2315),
-		"name": bson.M{
-			"firstname":  "Will",
-			"lastname":   "T",
-			"othernames": nil,
-		},
-		"address": bson.M{
-			"streetAddress": "537 White Hills Rd",
-			"suburbCounty":  "Evandale",
-			"zipPostcode":   "7258",
-			"stateProvince": "Tasmania",
-			"country":       "Oz",
-		},
-		"dob":         time.Date(1989, 1, 1, 0, 0, 0, 0, time.Local),
-		"phoneNumber": "+61 400 000 111",
-		"salary": bson.M{
-			"current":   99000.00,
-			"startDate": time.Date(2022, 6, 1, 0, 0, 0, 0, time.Local),
-			"history": bson.M{
-				"salary":    89000.00,
-				"startDate": time.Date(2021, 8, 1, 0, 0, 0, 0, time.Local),
-			},
-		},
-		"taxIdentifier": "103-443-923",
-		"role":          []string{"IC"},
-	}
+	// Our payload
+	// Complete this
+	payload := bson.M{}
 
 	// name.othernames can be `nil`, so let's test and remove if that condistion is true
-	name := payload["name"].(bson.M)
-	if name["othernames"] == nil {
-		fmt.Println("Removing nil")
-		delete(name, "othernames")
-		payload["name"] = name
-	}
+	// Complete this
+	payload = <FUNCTION>
 
-	bsonPayload, err = encryptData(clientEncryption, schema, dek, payload)
+	// Encrypt our payload
+	// Complete this
+	bsonPayload, err = encryptData(<VARIABLES>)
 	if err != nil {
 		fmt.Printf("Encrypt failure: %s", err)
 		exitCode = 1
@@ -349,7 +239,8 @@ func main() {
 	}
 
 	// decrypt the fields that require decrypting
-	output, err = decryptData(clientEncryption, findResult)
+	// Complete this
+	output, err = decryptData(<VARIABLES>)
 	if err != nil {
 		fmt.Printf("Decrypt failure: %s", err)
 		exitCode = 1

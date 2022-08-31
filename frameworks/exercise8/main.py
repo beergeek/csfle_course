@@ -226,7 +226,7 @@ def main():
     sys.exit(1)
   encrypted_db = secure_client[encrypted_db_name]
 
-  # remove `name.othernames` if None because wwe cannot encrytp none
+  # remove `name.othernames` if None because wwe cannot encrypt none
   # Complete this
   employee = <FUNCTION>
   
@@ -251,7 +251,7 @@ def main():
   trash_employee_key(client, kms_provider, namespace, employee_key_id)
 
   # Put a sleep in for 61 seconds
-  # Completet this
+  # Complete this
   <SLEEP_CODE>
 
   try:

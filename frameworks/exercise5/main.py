@@ -110,7 +110,7 @@ def main():
     ]
   }
 
-  # remove `name.othernames` if None because wwe cannot encrytp none
+  # remove `name.othernames` if None because wwe cannot encrypt none
   payload = <FUNCTION>
 
   auto_encryption = AutoEncryptionOpts(

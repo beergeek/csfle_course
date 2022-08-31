@@ -93,7 +93,7 @@ def main():
   # Complete this
   payload = { }
 
-  # remove `name.othernames` if None because wwe cannot encrytp none
+  # remove `name.othernames` if None because wwe cannot encrypt none
   # Complete this
 
   # encrypt parts of the payload that require encrypting
