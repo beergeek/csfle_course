@@ -292,6 +292,11 @@ func main() {
 						"bsonType": "string",
 					},
 				},
+				"dob": bson.M{
+					"encrypt": bson.M{
+						"bsonType": "string"
+					}
+				},
 				"salary": bson.M{
 					"encrypt": bson.M{
 						"bsonType": "object",

@@ -235,6 +235,11 @@ def main():
 						"bsonType": "string"
 					}
 				},
+				"dob": {
+					"encrypt": {
+						"bsonType": "string"
+					}
+				},
 				"salary": {
 					"encrypt": {
 						"bsonType": "object"
