@@ -2,71 +2,25 @@ try:
   import boto3
   import datetime
   import pymongo
-  import re
   import sys
   from botocore.exceptions import ClientError
   from pymongo.errors import EncryptionError, DuplicateKeyError
-  from bson.codec_options import CodecOptions
-  from pymongo.encryption import Algorithm
-  from bson.binary import STANDARD
-  from pymongo.encryption import ClientEncryption
+  from pymongo.encryption_options import AutoEncryptionOpts
+  from bson.binary import UUID_SUBTYPE, Binary
 except ImportError as e:
   print(e)
   exit(1)
 
-def mdb_client(db_data):
+def mdb_client(db_data, auto_encryption_opts=None):
   try:
     if db_data['DB_SSL'] is True:
-      client = pymongo.MongoClient(db_data['DB_CONNECTION_STRING'], serverSelectionTimeoutMS=db_data['DB_TIMEOUT'], ssl=True, ssl_ca_certs=db_data['DB_SSL_CA'])
+      client = pymongo.MongoClient(db_data['DB_CONNECTION_STRING'], serverSelectionTimeoutMS=db_data['DB_TIMEOUT'], ssl=True, ssl_ca_certs=db_data['DB_SSL_CA'], auto_encryption_opts=auto_encryption_opts)
     else:
-      client = pymongo.MongoClient(db_data['DB_CONNECTION_STRING'], serverSelectionTimeoutMS=db_data['DB_TIMEOUT'])
+      client = pymongo.MongoClient(db_data['DB_CONNECTION_STRING'], serverSelectionTimeoutMS=db_data['DB_TIMEOUT'], auto_encryption_opts=auto_encryption_opts)
     client.admin.command('hello')
     return client, None
   except (pymongo.errors.ServerSelectionTimeoutError, pymongo.errors.ConnectionFailure) as e:
-    return None, "Cannot connect to database, please check settings in config file: %s" %e
-
-def encryptData(data, encryptedClient, alg, dek):
-  try:
-    return encryptedClient.encrypt(data, alg, dek), None
-  except EncryptionError as e:
-    return None, e
-
-def nested_get(dic, keys):
-  for key in keys:
-    if key in dic:
-      dic = dic[key]
-    else:
-      return
-  return dic
-
-def nested_set(dic, keys, value):
-    for key in keys[:-1]:
-      dic = dic[key]
-    dic[keys[-1]] = value
-
-def encryptPayload(en_client, schema, data, dek):
-  # remove any fields that have nulls
-  clean_empty(data)
-  for a in schema:
-    for k in schema[a]:
-      x = nested_get(data, k)
-      if x:
-        v, err = encryptData(x, en_client, a, dek)
-        if err != None:
-          return None, err
-        nested_set(data, k, v)
-  return data, None
-
-def clean_empty(d):
-  if isinstance(d, dict):
-    return {
-      k: v 
-      for k, v in ((k, clean_empty(v)) for k, v in d.items())
-      if v
-    }
-  if isinstance(d, list):
-    return [v for v in map(clean_empty, d) if v]
-  return d    
+    return None, f"Cannot connect to database, please check settings in config file: {e}"
 
 def getAWSToken():
   try:
@@ -96,7 +50,7 @@ def main():
   provider = "aws"
   assumed_role_object, err = getAWSToken()
   if err != None:
-    print(err)
+    print(f"AWS Token error: {err}")
     sys.exit(1)
 
   kms_provider = {
@@ -112,40 +66,21 @@ def main():
 
   client, err = mdb_client(config_data)
   if err != None:
-    print(err)
+    print(f"MongoDB Client error: {err}")
     sys.exit(1)
-
-
-  client_encryption = ClientEncryption(
-    kms_provider,
-    keyvault_namespace,
-    client,
-    CodecOptions(uuid_representation=STANDARD)
-  )
 
   # retrieve the DEK UUID
   data_key_id_1 = client["__encryption"]["__keyVault"].find_one({"keyAltNames": "dataKey1"},{"_id": 1})['_id']
+  # close the client as we no longer require
+  client.close()
 
   # This is a map to determine which fields to encrypt and with which algorithm
-  schema_map = {
-    Algorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic: [
-      ["name", "firstname"],
-      ["name", "lastname"]
-    ],
-    Algorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Random: [
-      ["name", "othernames"],
-      ["address", "streetAddress"],
-      ["address", "suburbCounty"],
-      ["dob"],
-      ["phoneNumber"],
-      ["salary"],
-      ["taxIdentifier"]
-    ]
-  }
+  # complete this
+  schema_map = {<SCHEMA_MAP>}
 
-  # Create our payload with encrypted values
+  # Create our payload with encrypted values from our frontend
   payload = {
-    "_id": 2314, # employee ID
+    "_id": 2319, # employee ID
     "name": {
       "firstname": "Will",
       "lastname": "T",
@@ -177,25 +112,31 @@ def main():
   }
 
   # remove `name.othernames` if None because wwe cannot encrytp none
-  if payload["name"]["othernames"] == None:
-    del(payload["name"]["othernames"])
+  # complete this
+  payload = <FUNCTION>
 
-  # encrypt parts of the payload that require encrypting
-  payload, err = encryptPayload(client_encryption, schema_map, payload , data_key_id_1)
+  auto_encryption = AutoEncryptionOpts(
+    kms_provider,
+    keyvault_namespace,
+    schema_map = schema_map
+  )
+
+  # create our secure client
+  secure_client, err = mdb_client(config_data, auto_encryption_opts=auto_encryption)
   if err != None:
-    print(f"Encryption error: {err}")
+    print(err)
     sys.exit(1)
-
-  # insert our document
-  result, err = client[encrypted_db_name][encrypted_coll_name].insert_one(payload)
-  if re.search("E11000 duplicate key error", e.cause):
+  encrypted_db = secure_client[encrypted_db_name]
+  
+  try:
+    result = encrypted_db[encrypted_coll_name].insert_one(payload)
+    print(result.inserted_id)
+  except EncryptionError as e:
+    print(e)
+    sys.exit(1)
+  except DuplicateKeyError as e:
     print("duplicate")
     print(payload["_id"])
-    return
-  if err != None:
-    print(f"Insert error: {e.cause}")
-    sys.exit(1)
-  print(result.inserted_id)
 
 if __name__ == "__main__":
   main()

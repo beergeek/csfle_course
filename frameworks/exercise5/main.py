@@ -75,73 +75,11 @@ def main():
   client.close()
 
   # This is a map to determine which fields to encrypt and with which algorithm
-  schema_map = {
-		f"{encrypted_db_name}.{encrypted_coll_name}": {
-			"bsonType": "object",
-			"encryptMetadata": {
-				"keyId": [Binary(data_key_id_1, UUID_SUBTYPE)],
-				"algorithm": "AEAD_AES_256_CBC_HMAC_SHA_512-Random"
-			},
-			"properties": {
-				"name": {
-					"bsonType": "object",
-					"properties": {
-						"firstname": {
-							"encrypt": {
-								"bsonType":  "string",
-								"algorithm": "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic"
-							}
-						},
-						"lastname": {
-							"encrypt": {
-								"bsonType":  "string",
-								"algorithm": "AEAD_AES_256_CBC_HMAC_SHA_512-Deterministic"
-							}
-						},
-						"othernames": {
-							"encrypt": {
-								"bsonType": "string"
-							}
-						}
-					}
-				},
-				"address": {
-					"bsonType": "object",
-					"properties": {
-						"streetAddress": {
-							"encrypt": {
-								"bsonType": "string"
-							}
-						},
-						"suburbCounty": {
-							"encrypt": {
-								"bsonType": "string"
-							}
-						}
-					}
-				},
-				"phoneNumber": {
-					"encrypt": {
-						"bsonType": "string"
-					}
-				},
-				"salary": {
-					"encrypt": {
-						"bsonType": "object"
-					}
-				},
-				"taxIdentifier": {
-					"encrypt": {
-						"bsonType": "string"
-					}
-				}
-			}
-		}
-	}
+  schema_map = {<SCHEMA_MAP>}
 
   # Create our payload with encrypted values from our frontend
   payload = {
-    "_id": 2319, # employee ID
+    "_id": 2314, # employee ID
     "name": {
       "firstname": "Will",
       "lastname": "T",
@@ -173,8 +111,7 @@ def main():
   }
 
   # remove `name.othernames` if None because wwe cannot encrytp none
-  if payload["name"]["othernames"] == None:
-    del(payload["name"]["othernames"])
+  payload = <FUNCTION>
 
   auto_encryption = AutoEncryptionOpts(
     kms_provider,
@@ -191,13 +128,17 @@ def main():
   
   try:
     result = encrypted_db[encrypted_coll_name].insert_one(payload)
-    print(result.inserted_id)
+    inserted_id = result.inserted_id
   except EncryptionError as e:
     print(e)
     sys.exit(1)
   except DuplicateKeyError as e:
     print("duplicate")
-    print(payload["_id"])
+    inserted_id = payload["_id"]
+
+  encrypted_result = encrypted_db[encrypted_coll_name].find_one({"_id": inserted_id})
+
+  print(encrypted_result)
 
 if __name__ == "__main__":
   main()
