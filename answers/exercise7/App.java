@@ -382,17 +382,6 @@ public class App {
                 System.exit(1);
             }
 
-            /*
-                encrypted_result = client[encrypted_db_name][encrypted_coll_name].find_one({"_id": inserted_id},{"dekAltName": 0})
-
-                pprint(encrypted_result)
-                
-                decrypted_result = encrypted_db[encrypted_coll_name].find_one({"_id": inserted_id},{"dekAltName": 0})
-
-                pprint(decrypted_result)
-
-                trash_employee_key(client, kms_provider, namespace, employee_key_id)
-             */
             ObservableSubscriber<Document> encDocSubscriber = new OperationSubscriber<Document>();
             MongoDatabase plainDb = client.getDatabase(encryptedDbName);
             MongoCollection<Document> plainEncryptedColl = plainDb.getCollection(encryptedCollName);
